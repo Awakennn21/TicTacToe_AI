@@ -77,29 +77,7 @@ void MinMaxvsMCTS()
 
         while (true)
         {
-            PlayerToMove = PlayerToMove == 1 ? 2 : 1;
-            auto [mmY, mmX] = MM.NextMove(MainMap.Data());
-            MCTSClient.FeedInMove(mmY * MapSize + mmX, PlayerToMove);
-            MainMap.At(mmY, mmX, PlayerToMove);
-
-
-            std::cout << "MinMax\n";
-            MainMap.Print();
-
-            GameResult = MCTSClient.EvaluateGame();
-
-            if (GameResult.has_value())
-            {
-                if (GameResult != 0)
-                {
-                    MinMaxWins++;
-                }
-                else
-                {
-                    Draws++;
-                }
-                break;
-            }
+           
 
             PlayerToMove = PlayerToMove == 1 ? 2 : 1;
             auto [Move, Player] = MCTSClient.NextMove(PlayerToMove);
@@ -123,6 +101,30 @@ void MinMaxvsMCTS()
                 }
                 break;
             }
+
+            PlayerToMove = PlayerToMove == 1 ? 2 : 1;
+            auto [mmY, mmX] = MM.NextMove(MainMap.Data());
+            MCTSClient.FeedInMove(mmY * MapSize + mmX, PlayerToMove);
+            MainMap.At(mmY, mmX, PlayerToMove);
+
+
+            std::cout << "MinMax\n";
+            MainMap.Print();
+
+            GameResult = MCTSClient.EvaluateGame();
+
+            if (GameResult.has_value())
+            {
+                if (GameResult != 0)
+                {
+                    MinMaxWins++;
+                }
+                else
+                {
+                    Draws++;
+                }
+                break;
+            }
         }
 
         std::cout << "MCTS won:" << MCTSWins << " times and MinMax won:" << MinMaxWins << " times, "<<Draws<<" draws" << std::endl;
@@ -134,8 +136,8 @@ void MinMaxvsMCTS()
 
 int main()
 {
-    //MinMaxvsMCTS();
-    MCTSvsMCTS();
+    MinMaxvsMCTS();
+    //MCTSvsMCTS();
     return 0;
     
 }

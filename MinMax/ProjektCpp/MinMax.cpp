@@ -253,7 +253,7 @@ int MinMax::EvaluatePosition(char** board, bool isMax, char player)
         if (player2Chars == 0 && player1Chars > 1)
         {
             score += player1Chars;
-            if (player1Chars == inRow-1)
+            if (player1Chars == inRow - 1)
             {
                 score += 5;
             }
@@ -262,18 +262,18 @@ int MinMax::EvaluatePosition(char** board, bool isMax, char player)
                 score += 10;
             }
         }
-        //else if (player1Chars == 0 && player2Chars != 0)
-        //{
-        //    score -= player2Chars;
-        //   /* if (player2Chars == inRow - 1)
-        //    {
-        //        score -= 5;
-        //    }
-        //    if (player2Chars == inRow)
-        //    {
-        //        score -= 10;
-        //    }*/
-        //}
+        else if (player1Chars == 0 && player2Chars != 0)
+        {
+            score -= player2Chars;
+            if (player2Chars == inRow - 1)
+            {
+                score += 5;
+            }
+            if (player2Chars == inRow)
+            {
+                score += 10;
+            }
+        }
     }
 
     return score;
