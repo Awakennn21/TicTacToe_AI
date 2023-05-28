@@ -1,4 +1,5 @@
 #pragma once
+#include "../Map.h"
 #include <random>
 #include <vector>
 #include <list>
@@ -38,25 +39,25 @@ public:
 public:
 
     MCTS(int mapSize, uint32_t winCondition)
-        :MAP_SIZE(mapSize), WIN_CONDITION(winCondition), PlayerToBeAsserted(-1) {}
+        :MAP_SIZE(mapSize), WIN_CONDITION(winCondition), PlayerToBeAsserted(-1),m_GameState(Map(MAP_SIZE)) {}
 
     int RunMCTS(Node* state, size_t iterations, int playerToBeAsserted);
 
-    std::optional<double> HasGameEnded(const std::vector<std::vector<int>>& currentPos);
-    
-    std::vector<std::vector<int>> RecreatePos(Node* start);
+    std::optional<double> Evaluate() const;
 
-    size_t EmptySpacesOnMap(std::vector<std::vector<int>> current);
+    void RecreatePos(Node* start);
 
     void Clear();
 
 private:
 
-    const double CONSTANT_C = 1.5;
-    const int RolloutIterations = 10;
+    const double CONSTANT_C = 0.5;
+    const int RolloutIterations = 4;
     const int MAP_SIZE;
     const uint32_t WIN_CONDITION;
     int PlayerToBeAsserted;
+
+    Map m_GameState;
 
 private:
 
@@ -72,11 +73,13 @@ private:
 
     void AnalizeMoves(Node* root);
 
-    uint32_t InRowCount(const std::vector<std::vector<int>>& currentPos, int posX, int posY, int dx, int dy);
+    size_t EmptySpacesOnMap() const;
+
+    std::optional<double> HasGameEnded(int y, int x);
+
+    uint32_t InRowCount(int posX, int posY, int dx, int dy) const;
 
     std::vector<MoveInfo> GetValidMoves(Node* target);
-    
-    size_t EmptySpacesOnMap(Node* current);
 
     void AddChildNode(Node* target, MoveInfo move);
 };

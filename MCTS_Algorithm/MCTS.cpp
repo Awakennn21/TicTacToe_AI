@@ -2,115 +2,24 @@
 int MCTS::RunMCTS(Node* state, size_t iterations, int playerToBeAsserted)
 {
     srand(time(NULL));
+    m_GameState.Clear();
+
     if (state == nullptr)
     {
         return rand() % (MAP_SIZE * MAP_SIZE);
     }
+
+
     PlayerToBeAsserted = playerToBeAsserted;
     for (int i = 0; i < iterations; i++)
     {
         SelectNode(state);
     }
     AnalizeMoves(state);
+
+
     int Result = ReturnBestMove(state);
     return Result;
-}
-
-void MCTS::AnalizeMoves(Node* root)
-{
-    if (root == nullptr)
-    {
-        return;
-    }
-
-    std::vector<Node*> stack;
-    stack.push_back(root);
-
-    while (!stack.empty()) 
-    {
-        Node* current_node = stack[stack.size() - 1];
-        stack.pop_back();
-
-        if (current_node->WinPropability == 0.0 && current_node->children.size() == 0)
-        {
-            current_node->Parent->WinPropability = 0.0;
-        }
-
-        for (auto it : current_node->children)
-        {
-            stack.push_back(it);
-        }
-    }    
-}
-
-std::vector<std::vector<int>> MCTS::RecreatePos(Node* start)
-{
-    std::vector<int> current_map(MAP_SIZE * MAP_SIZE, 0);
-    if (start != nullptr)
-    {
-        Node tmp = *start;
-        while (tmp.Parent != nullptr)
-        {
-            current_map[tmp.Move.pos] = tmp.Move.player;
-            tmp = *(tmp.Parent);
-        }
-        current_map[tmp.Move.pos] = tmp.Move.player;
-    }
-
-    std::vector<std::vector<int>> CurrentPos;
-    for (int i = 0; i < MAP_SIZE; i++)
-    {
-        CurrentPos.push_back(std::vector<int>());
-        for (int j = 0; j < MAP_SIZE; j++)
-        {
-            CurrentPos[i].push_back(current_map[i * MAP_SIZE + j]);
-        }
-    }
-    return CurrentPos;
-}
-
-void MCTS::Clear()
-{
-    for (auto i : m_AllAlocations)
-    {
-        delete i;
-    }
-    m_AllAlocations.clear();
-}
-
-std::optional<double> MCTS::HasGameEnded(const std::vector<std::vector<int>>& currentPos)
-{
-    for (int y = 0; y < currentPos.size(); y++)
-    {
-        for (int x = 0; x < currentPos[y].size(); x++)
-        {
-            if (currentPos[y][x] != 0)
-            {
-                if (InRowCount(currentPos, x, y, 1, 0) >= WIN_CONDITION  ||
-                    InRowCount(currentPos, x, y, -1, 1) >= WIN_CONDITION ||
-                    InRowCount(currentPos, x, y, 0, 1) >= WIN_CONDITION  ||
-                    InRowCount(currentPos, x, y, 1, 1) >= WIN_CONDITION)
-                {
-                    if (currentPos[y][x] == PlayerToBeAsserted)
-                    {
-                        return 100;
-                    }
-                    else
-                    {
-                        return -100;
-                    }
-                }
-            }
-        }
-    }
-    if (EmptySpacesOnMap(currentPos) == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return {};
-    }
 }
 
 void MCTS::SelectNode(Node* start)
@@ -143,16 +52,103 @@ void MCTS::SelectNode(Node* start)
 
         start = best_child;
     }
-    std::vector<std::vector<int>> Map = RecreatePos(start);
-    if (start->Visits == 0)
+
+    RecreatePos(start);
+    if (!Evaluate().has_value())
     {
-        RollOut(start);
-    }
-    else if (!HasGameEnded(Map).has_value())
-    {
-        Expansion(start);
+        if (start->Visits == 0)
+        {
+            RollOut(start);
+        }
+        else
+        {
+            Expansion(start);
+        }
     }
 
+}
+
+void MCTS::AnalizeMoves(Node* root)
+{
+   for(auto current_node : m_AllAlocations)
+   {
+        if (current_node->WinPropability == 0.0 && current_node->children.size() == 0)
+        {
+            current_node->Parent->WinPropability = 0.0;
+        }
+   }    
+}
+
+void MCTS::RecreatePos(Node* start)
+{
+    m_GameState.Clear();
+    while (true)
+    {
+        m_GameState.At(start->Move.pos / MAP_SIZE, start->Move.pos % MAP_SIZE, start->Move.player);
+        if (start->Parent == nullptr)
+        {
+            return;
+        }
+        else
+        {
+            start = start->Parent;
+        }
+    }
+}
+
+void MCTS::Clear()
+{
+    for (auto i : m_AllAlocations)
+    {
+        delete i;
+    }
+    m_AllAlocations.clear();
+}
+
+size_t MCTS::EmptySpacesOnMap() const
+{
+    size_t count = 0;
+    for (int i = 0; i < m_GameState.GetDimensions(); i++)
+    {
+        for (int j = 0; j < m_GameState.GetDimensions(); j++)
+        {
+            if (m_GameState.GetAt(i, j) == 0)
+            {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+std::optional<double> MCTS::HasGameEnded(int y, int x)
+{
+    if (InRowCount(x, y, -1, -1) >= WIN_CONDITION ||
+        InRowCount(x, y, -1, 0) >= WIN_CONDITION || 
+        InRowCount(x, y, -1, 1) >= WIN_CONDITION || 
+        InRowCount(x, y, 0,  -1) >= WIN_CONDITION || 
+        InRowCount(x, y, 0,  1) >= WIN_CONDITION || 
+        InRowCount(x, y, 1,  -1) >= WIN_CONDITION || 
+        InRowCount(x, y, 1,  0) >= WIN_CONDITION || 
+        InRowCount(x, y, 1,  1) >= WIN_CONDITION)
+    {
+        if (m_GameState.GetAt(y, x) == PlayerToBeAsserted)
+        {
+            return 100;
+        }
+        else
+        {
+            return -100;
+        }
+    }
+    if (EmptySpacesOnMap() == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return {};
+    }
 }
 
 void MCTS::Expansion(Node* node)
@@ -162,12 +158,8 @@ void MCTS::Expansion(Node* node)
     {
         AddChildNode(node, move);
     }
-
-    if (valid_moves.empty())
-    {
-        RollOut(node);
-    }
-    else
+    RecreatePos(node->children[0]);
+    if (!Evaluate().has_value())
     {
         RollOut(node->children[0]);
     }
@@ -178,21 +170,22 @@ void MCTS::RollOut(Node* start)
     int WinsCount = 0;
     for (int i = 0; i < RolloutIterations; i++)
     {
-        std::vector<std::vector<int>> CurrentGameState = RecreatePos(start);
+        RecreatePos(start);
         int PlayerToMove = start->Move.player == 1 ? 2 : 1;
         std::vector<MoveInfo> SpacesAvailable = GetValidMoves(start);
-        std::optional<double> Result = HasGameEnded(CurrentGameState);
-        while (!Result.has_value() && SpacesAvailable.size() > 0)
+        std::optional<double> Result;
+        do
         {
             int Random = rand() % SpacesAvailable.size();
 
-            CurrentGameState[SpacesAvailable[Random].pos / MAP_SIZE][SpacesAvailable[Random].pos % MAP_SIZE] = PlayerToMove;
-            SpacesAvailable.erase(SpacesAvailable.begin() + Random);
+            m_GameState.At(SpacesAvailable[Random].pos / MAP_SIZE, SpacesAvailable[Random].pos % MAP_SIZE, PlayerToMove);
+            Result = HasGameEnded(SpacesAvailable[Random].pos / MAP_SIZE, SpacesAvailable[Random].pos % MAP_SIZE);
 
-            Result = HasGameEnded(CurrentGameState);
+            SpacesAvailable.erase(SpacesAvailable.begin() + Random);
 
             PlayerToMove = PlayerToMove == 1 ? 2 : 1;
         }
+        while (!Result.has_value());
         WinsCount = Result == 100 ? WinsCount + 1 : Result == -100 ? WinsCount - 1 : WinsCount;
     }
     BackPropagate(start, WinsCount);
@@ -215,6 +208,41 @@ void MCTS::BackPropagate(Node* start, int wins)
         }
     } 
 
+}
+
+std::optional<double> MCTS::Evaluate() const
+{
+    for (int y = 0; y < m_GameState.GetDimensions(); y++)
+    {
+        for (int x = 0; x < m_GameState.GetDimensions(); x++)
+        {
+            if (m_GameState.GetAt(y, x) != 0)
+            {
+                if (InRowCount(x, y, 1, 0) >= WIN_CONDITION ||
+                    InRowCount(x, y, -1, 1) >= WIN_CONDITION ||
+                    InRowCount(x, y, 0, 1) >= WIN_CONDITION ||
+                    InRowCount(x, y, 1, 1) >= WIN_CONDITION)
+                {
+                    if (m_GameState.GetAt(y, x) == PlayerToBeAsserted)
+                    {
+                        return 100;
+                    }
+                    else
+                    {
+                        return -100;
+                    }
+                }
+            }
+        }
+    }
+    if (EmptySpacesOnMap() == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return {};
+    }
 }
 
 int MCTS::ReturnBestMove(Node* root)
@@ -243,15 +271,15 @@ int MCTS::ReturnBestMove(Node* root)
 
 std::vector<MCTS::MoveInfo> MCTS::GetValidMoves(Node* target)
 {
-    std::vector<std::vector<int>> Map = RecreatePos(target);
+    RecreatePos(target);
     std::vector<MoveInfo> Result;
-    if (!HasGameEnded(Map).has_value())
+    if (!Evaluate().has_value())
     {
-        for (int i = 0; i < Map.size(); i++)
+        for (int i = 0; i < m_GameState.GetDimensions(); i++)
         {
-            for (int j = 0; j < Map[i].size(); j++)
+            for (int j = 0; j < m_GameState.GetDimensions(); j++)
             {
-                if (Map[i][j] == 0)
+                if (m_GameState.GetAt(i,j) == 0)
                 {
                     Result.emplace_back(i * MAP_SIZE + j,target->Move.player == 1 ? 2 : 1 );
                 }
@@ -268,18 +296,18 @@ void MCTS::AddChildNode(Node* target, MoveInfo move)
     m_AllAlocations.push_back(New);
 }
 
-uint32_t MCTS::InRowCount(const std::vector<std::vector<int>>& currentPos, int posX, int posY, int dx, int dy)
+uint32_t MCTS::InRowCount(int posX, int posY, int dx, int dy) const
 {
     uint32_t HitCount = 0;
-    int Player = currentPos[posY][posX];
-    while (currentPos[posY][posX] == Player)
+    int Player = m_GameState.GetAt(posY, posX);
+    while (m_GameState.GetAt(posY, posX) == Player)
     {
         HitCount++;
         if (HitCount >= WIN_CONDITION) 
         {
             break;
         }
-        if (posY + dy >= MAP_SIZE || posX + dx >= MAP_SIZE || posX + dx < 0)
+        if (posY + dy >= MAP_SIZE || posX + dx >= MAP_SIZE || posX + dx < 0 || posY + dy < 0)
         {
             break;
         }
@@ -289,24 +317,3 @@ uint32_t MCTS::InRowCount(const std::vector<std::vector<int>>& currentPos, int p
     return HitCount;
 }
 
-size_t MCTS::EmptySpacesOnMap(Node* current)
-{
-    std::vector<MCTS::MoveInfo> moves = GetValidMoves(current);
-    return moves.size();
-}
-
-size_t MCTS::EmptySpacesOnMap(std::vector<std::vector<int>> Map)
-{
-    size_t count = 0;
-    for (int i = 0; i < Map.size(); i++)
-    {
-        for (int j = 0; j < Map[i].size(); j++)
-        {
-            if (Map[i][j] == 0)
-            {
-                count++;
-            }
-        }
-    }
-    return count;
-}

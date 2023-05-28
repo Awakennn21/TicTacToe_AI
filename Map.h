@@ -25,6 +25,8 @@ public:
 
 	size_t GetDimensions() const { return m_MapDimension; }
 	int** Data() const { return m_Map; }
+	void At(int i, int j, int value) { m_Map[i][j] = value; }
+	int GetAt(int i, int j) const { return m_Map[i][j]; }
 
 	void Print()
 	{
@@ -50,10 +52,7 @@ public:
 		}
 	}
 
-	void At(int i, int j, int value)
-	{
-		m_Map[i][j] = value;
-	}
+
 
 
 private:

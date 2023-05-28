@@ -42,8 +42,8 @@ public:
     {
         m_Algorithm.Clear();
         m_Tree = ConvertPosIntoTree(m_MovesHistory);
-        std::vector<std::vector<int>> Map = m_Algorithm.RecreatePos(m_Tree);
-        std::optional<double> GameResult = m_Algorithm.HasGameEnded(Map);
+        m_Algorithm.RecreatePos(m_Tree);
+        std::optional<double> GameResult = m_Algorithm.Evaluate();
         if (m_Tree != nullptr)
         {
             return GameResult;
