@@ -65,7 +65,10 @@ void MCTS::SelectNode(Node* start)
             Expansion(start);
         }
     }
-
+    else
+    {
+        BackPropagate(start, Evaluate().value() / 100 );
+    }
 }
 
 void MCTS::AnalizeMoves(Node* root)

@@ -3,8 +3,8 @@
 #include "Map.h"
 
 
-constexpr size_t MapSize = 4;
-constexpr int WinCondition = 4;
+constexpr size_t MapSize = 6;
+constexpr int WinCondition = 5;
 constexpr int Iterations = 20000;
 constexpr uint32_t NumberOfGames = 10;
 
