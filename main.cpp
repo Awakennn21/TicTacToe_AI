@@ -2,149 +2,137 @@
 #include "MinMax/ProjektCpp/MinMax_Controler.h"
 #include "Map.h"
 #include "Timer.h"
+//#define DEBUG_LOG
 
-
-constexpr size_t MapSize = 5;
-constexpr int WinCondition = 5;
-constexpr int Iterations = 20000;
-constexpr uint32_t NumberOfGames = 100;
-
-void MCTSvsMCTS()
+class GameController
 {
-    Map MainMap(MapSize);
-    MainMap.Clear();
-
-    MCTS_Client_API MCTSClient(MapSize, WinCondition, Iterations);
-
-    int MCTSWins = 0;
-    int Draws = 0;
-    int PlayerToMove = 2;
-
-    for (int i = 0; i < NumberOfGames; i++)
+public:
+    enum eAlgorithms
     {
-        std::optional<double> GameResult;
+        MCTS = 0, MinMax = 1, None = 2
+    };
+public:
 
-        while (true)
-        {
-            PlayerToMove = PlayerToMove == 1 ? 2 : 1;
-            
-            auto [Move, Player] = MCTSClient.NextMove(PlayerToMove);
-            MainMap.At(Move / MapSize, Move % MapSize, Player);
+    GameController(size_t mapSize, uint32_t winCondition, uint32_t numberOfGames, uint32_t iterations = 20000)
+        :   m_MapSize(mapSize), m_WinCondition(winCondition), m_NumberOfGames(numberOfGames),
+            m_MCTS_Client(MCTS_Client_API(mapSize, winCondition, iterations)), m_MinMax_Client(MinMax_Controler(mapSize, winCondition, '1')) {}
 
-
-            std::cout << "MCTS " << Move << std::endl;;
-            MainMap.Print();
-
-            GameResult = MCTSClient.EvaluateGame();
-
-            if (GameResult.has_value())
-            {
-                if (GameResult != 0)
-                {
-                    MCTSWins++;
-                }
-                else
-                {
-                    Draws++;
-                }
-                break;
-            }
-        }
-
-        std::cout << "MCTS won:" << MCTSWins << " times against itself and drew "<<Draws<<" times" << std::endl;
-        MCTSClient.NewGame();
+    void Simulate(std::vector<eAlgorithms> movesSequence)
+    {
+        Map MainMap(m_MapSize);
         MainMap.Clear();
-        PlayerToMove = 2;
+
+        int MCTSWins = 0;
+        int MinMaxWins = 0;
+        int Draws = 0;
+
+        for (int i = 0; i < m_NumberOfGames; i++)
+        {
+            std::optional<double> GameResult;
+            int PlayerToMove = 1;
+            int Iterator = 0;
+            int Y, X;
+
+            do
+            {
+                switch (movesSequence[Iterator])
+                {
+                case MCTS:
+                    std::tie(Y, X) = MctsMove(MainMap, PlayerToMove);
+                    break;
+                case MinMax:
+                    std::tie(Y, X) = MinMaxMove(MainMap, PlayerToMove);
+                    break;
+                }
+                MainMap.At(Y, X, PlayerToMove);
+                PlayerToMove = PlayerToMove == 1 ? 2 : 1;
+                Iterator = Iterator == movesSequence.size() - 1 ? 0 : Iterator+1;
+            }
+            while ((GameResult = m_MCTS_Client.EvaluateGame()).has_value() == false);
+
+            if (GameResult > 0.0)
+            {
+                MCTSWins++;
+            }
+            else if (GameResult < 0.0)
+            {
+                MinMaxWins++;
+            }
+            else
+            {
+                Draws++;
+            }
+
+            std::cout << "MCTS won:" << MCTSWins << " times and MinMax won:" << MinMaxWins << " times, "<<Draws<<" draws" << std::endl;
+            m_MCTS_Client.NewGame();
+            MainMap.Clear();
+        }
     }
 
-}
+private:
+    MCTS_Client_API m_MCTS_Client;
+    MinMax_Controler m_MinMax_Client;
 
-void MinMaxvsMCTS()
-{
-    Map MainMap(MapSize);
-    MainMap.Clear();
+    uint32_t m_WinCondition;
+    uint32_t m_Iterations;
+    uint32_t m_MapSize;
+    uint32_t m_NumberOfGames;
 
-    MCTS_Client_API MCTSClient(MapSize, WinCondition, Iterations);
-    MinMax_Controler MM(MapSize, WinCondition, '1');
-    Timer timer;
-
-    int MCTSWins = 0;
-    int MinMaxWins = 0;
-    int Draws = 0;
-    double TimeElapsed = 0.0;
-    int PlayerToMove = 2;
-
-    for (int i = 0; i < NumberOfGames; i++)
+private:
+    std::pair<int, int> MctsMove(Map& map, int playerToMove)
     {
-        std::optional<double> GameResult;
+        Timer timer;
+        double TimeElapsed = 0.0;
 
-        while (true)
-        {
+        timer.Start();
+            auto [Move, Player] = m_MCTS_Client.NextMove(playerToMove);
+        TimeElapsed = timer.Stop();
 
-            PlayerToMove = PlayerToMove == 1 ? 2 : 1;
+        #ifdef DEBUG_LOG
+            std::cout << "MCTS " << Move << " time needed to estimate a move: " << TimeElapsed * 1000.0 << "ms" << std::endl;
+            map.Print();
+        #endif
 
-            timer.Start();
-            auto [mmY, mmX] = MM.NextMove(MainMap.Data());
-            TimeElapsed = timer.Stop();
-
-            MCTSClient.FeedInMove(mmY * MapSize + mmX, PlayerToMove);
-
-            MainMap.At(mmY, mmX, PlayerToMove);
-           // std::cout << "MinMax, time needed to estimate a move(ms) : " << TimeElapsed * 1000.0 << "ms" << std::endl;
-           // MainMap.Print();
-
-            GameResult = MCTSClient.EvaluateGame();
-
-            if (GameResult.has_value())
-            {
-                if (GameResult != 0)
-                {
-                    MinMaxWins++;
-                }
-                else
-                {
-                    Draws++;
-                }
-                break;
-            }
-
-            PlayerToMove = PlayerToMove == 1 ? 2 : 1;
-
-            timer.Start();
-            auto [Move, Player] = MCTSClient.NextMove(PlayerToMove);
-            TimeElapsed = timer.Stop();
-
-            MainMap.At(Move / MapSize, Move % MapSize, Player);
-            //std::cout << "MCTS " << Move <<" time needed to estimate a move: "<< TimeElapsed * 1000.0 <<"ms" << std::endl;;
-            //MainMap.Print();
-
-            GameResult = MCTSClient.EvaluateGame();
-
-            if (GameResult.has_value())
-            {
-                if (GameResult != 0)
-                {
-                    MCTSWins++;
-                }
-                else
-                {
-                    Draws++;
-                }
-                break;
-            }
-        }
-
-        std::cout << "MCTS won:" << MCTSWins << " times and MinMax won:" << MinMaxWins << " times, "<<Draws<<" draws" << std::endl;
-        MCTSClient.NewGame();
-        MainMap.Clear();
-        PlayerToMove = 2;
+        return { Move / m_MapSize, Move % m_MapSize };
     }
-}
+
+    std::pair<int,int> MinMaxMove(Map& map, int playerToMove)
+    {
+        Timer timer;
+        double TimeElapsed = 0.0;
+
+        timer.Start();
+            auto [mmY, mmX] = m_MinMax_Client.NextMove(map.Data());
+        TimeElapsed = timer.Stop();
+        m_MCTS_Client.FeedInMove(mmY * m_MapSize + mmX, playerToMove);
+
+        #ifdef DEBUG_LOG
+            std::cout << "MinMax, time needed to estimate a move(ms) : " << TimeElapsed * 1000.0 << "ms" << std::endl;
+            map.Print();
+        #endif
+
+        return { mmY,mmX };
+    }
+};
+
 
 int main()
 {
-    MinMaxvsMCTS();
-    //MCTSvsMCTS();
+    constexpr uint32_t MapSize = 6;
+    constexpr uint32_t WinCondition = 6;
+    constexpr uint32_t NumberOfGames = 100;
+
+    GameController Controller(MapSize, WinCondition, NumberOfGames);
+
+    Controller.Simulate({ Controller.MinMax,Controller.MCTS});
+
     return 0;
     
 }
+/*
+    4x4-4 1/0/99
+    5x5-4 2/10/88
+    5x5-5 0/0/100
+    6x6-5 0/3/97
+
+*/

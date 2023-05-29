@@ -250,7 +250,7 @@ int MinMax::EvaluatePosition(char** board, bool isMax, char player)
     {
         int player1Chars = CountOccurrences(player, four);
         int player2Chars = CountOccurrences(NextPlayer(player), four);
-        if (player2Chars == 0 && player1Chars > 1)
+        if (player2Chars == 0 && player1Chars != 0)
         {
             score += player1Chars;
             if (player1Chars == inRow - 1)
@@ -267,11 +267,11 @@ int MinMax::EvaluatePosition(char** board, bool isMax, char player)
             score -= player2Chars;
             if (player2Chars == inRow - 1)
             {
-                score += 5;
+                score -= 10;
             }
             if (player2Chars == inRow)
             {
-                score += 10;
+                score -= 20;
             }
         }
     }
@@ -297,7 +297,7 @@ std::pair<int, int> MinMax::GetBestMove(int depth, bool isMax, char player, char
             {
                 board[i][j] = player;
 
-                int score = MinMaxFunction(3, board, depth, isMax, player, -9999, 9999);
+                int score = MinMaxFunction(2, board, depth, isMax, player, -9999, 9999);
 
                 board[i][j] = free;
 

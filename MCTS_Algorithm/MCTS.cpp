@@ -77,16 +77,15 @@ void MCTS::AnalizeMoves(Node* root)
    {
         RecreatePos(current_node);
         std::optional<double> StateResult = Evaluate();
-        if (StateResult.has_value()&& current_node->children.size() == 0)
+        if (StateResult.has_value() && current_node->children.size() == 0)
         {
-            if (StateResult.value() != 0)
+            if (StateResult.value() < 0.0)
             {
                 current_node->Parent->WinPropability = StateResult.value() / 100;
                 current_node->WinPropability = StateResult.value();
             }
         }
-   }    
-
+   } 
 }
 
 void MCTS::RecreatePos(Node* start)
