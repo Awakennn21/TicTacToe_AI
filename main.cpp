@@ -13,7 +13,7 @@ public:
     };
 public:
 
-    GameController(size_t mapSize, uint32_t winCondition, uint32_t numberOfGames, uint32_t iterations = 20000)
+    GameController(size_t mapSize, uint32_t winCondition, uint32_t numberOfGames, uint32_t iterations = 10000)
         :   m_MapSize(mapSize), m_WinCondition(winCondition), m_NumberOfGames(numberOfGames),
             m_MCTS_Client(MCTS_Client_API(mapSize, winCondition, iterations)), m_MinMax_Client(MinMax_Controler(mapSize, winCondition, '1')) {}
 
@@ -47,6 +47,10 @@ public:
                 MainMap.At(Y, X, PlayerToMove);
                 PlayerToMove = PlayerToMove == 1 ? 2 : 1;
                 Iterator = Iterator == movesSequence.size() - 1 ? 0 : Iterator+1;
+                #ifdef DEBUG_LOG
+                                MainMap.Print();
+                #endif // DEBUG_LOG
+
             }
             while ((GameResult = m_MCTS_Client.EvaluateGame()).has_value() == false);
 
@@ -89,8 +93,7 @@ private:
         TimeElapsed = timer.Stop();
 
         #ifdef DEBUG_LOG
-            std::cout << "MCTS " << Move << " time needed to estimate a move: " << TimeElapsed * 1000.0 << "ms" << std::endl;
-            map.Print();
+            std::cout << "MCTS placed "<<playerToMove<<" at "<< Move / m_MapSize<<","<< Move % m_MapSize << ". Time needed to estimate a move: " << TimeElapsed * 1000.0 << "ms" << std::endl;
         #endif
 
         return { Move / m_MapSize, Move % m_MapSize };
@@ -107,8 +110,7 @@ private:
         m_MCTS_Client.FeedInMove(mmY * m_MapSize + mmX, playerToMove);
 
         #ifdef DEBUG_LOG
-            std::cout << "MinMax, time needed to estimate a move(ms) : " << TimeElapsed * 1000.0 << "ms" << std::endl;
-            map.Print();
+            std::cout << "MinMax placed " << playerToMove << " at " << mmY << "," << mmX << ". Time needed to estimate a move : " << TimeElapsed * 1000.0 << "ms" << std::endl;
         #endif
 
         return { mmY,mmX };
@@ -118,21 +120,21 @@ private:
 
 int main()
 {
-    constexpr uint32_t MapSize = 6;
-    constexpr uint32_t WinCondition = 6;
+    constexpr uint32_t MapSize = 3;
+    constexpr uint32_t WinCondition = 3;
     constexpr uint32_t NumberOfGames = 100;
 
     GameController Controller(MapSize, WinCondition, NumberOfGames);
 
-    Controller.Simulate({ Controller.MinMax,Controller.MCTS});
+    Controller.Simulate({Controller.MinMax,Controller.MCTS });
 
     return 0;
     
 }
 /*
+    3x3-3 0/0/100
     4x4-4 1/0/99
-    5x5-4 2/10/88
     5x5-5 0/0/100
     6x6-5 0/3/97
-
+    6X6-6 0/0/100
 */
