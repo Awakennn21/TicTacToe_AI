@@ -34,7 +34,7 @@ void MCTS::SelectNode(Node* start)
         {
             if (start->children[i]->Visits != 0)
             {
-                double exploitation_value = start->children[i]->WinsCount / start->children[i]->Visits / start->children[i]->Visits;
+                double exploitation_value = start->children[i]->WinsCount / start->children[i]->Visits;
                 double exploration_value = (sqrt(log(start->Visits) / start->children[i]->Visits));
                 score = exploitation_value + CONSTANT_C * exploration_value;
             }
@@ -67,7 +67,7 @@ void MCTS::SelectNode(Node* start)
     }
     else
     {
-        BackPropagate(start, Evaluate().value() / 100 );
+        BackPropagate(start, Evaluate().value()/100);
     }
 }
 
@@ -75,11 +75,18 @@ void MCTS::AnalizeMoves(Node* root)
 {
    for(auto current_node : m_AllAlocations)
    {
-        if (current_node->WinPropability == 0.0 && current_node->children.size() == 0)
+        RecreatePos(current_node);
+        std::optional<double> StateResult = Evaluate();
+        if (StateResult.has_value()&& current_node->children.size() == 0)
         {
-            current_node->Parent->WinPropability = 0.0;
+            if (StateResult.value() != 0)
+            {
+                current_node->Parent->WinPropability = StateResult.value() / 100;
+                current_node->WinPropability = StateResult.value();
+            }
         }
    }    
+
 }
 
 void MCTS::RecreatePos(Node* start)

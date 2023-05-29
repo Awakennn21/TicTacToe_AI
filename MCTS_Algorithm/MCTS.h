@@ -51,7 +51,7 @@ public:
 
 private:
 
-    const double CONSTANT_C = 0.5;
+    const double CONSTANT_C = 1.5;
     const int RolloutIterations = 4;
     const int MAP_SIZE;
     const uint32_t WIN_CONDITION;
