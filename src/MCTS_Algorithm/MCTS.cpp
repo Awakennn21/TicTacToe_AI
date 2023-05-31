@@ -67,14 +67,14 @@ void MCTS::SelectNode(Node* start)
     }
     else
     {
-        BackPropagate(start, Evaluate().value()/100);
+        BackPropagate(start, Evaluate().value() / 100);
     }
 }
 
 void MCTS::AnalizeMoves(Node* root)
 {
-   for(auto current_node : m_AllAlocations)
-   {
+    for (auto current_node : m_AllAlocations)
+    {
         RecreatePos(current_node);
         std::optional<double> StateResult = Evaluate();
         if (StateResult.has_value() && current_node->children.size() == 0)
@@ -85,7 +85,7 @@ void MCTS::AnalizeMoves(Node* root)
                 current_node->WinPropability = StateResult.value();
             }
         }
-   } 
+    }
 }
 
 void MCTS::RecreatePos(Node* start)
@@ -133,13 +133,13 @@ size_t MCTS::EmptySpacesOnMap() const
 std::optional<double> MCTS::HasGameEnded(int y, int x)
 {
     if (InRowCount(x, y, -1, -1) >= WIN_CONDITION ||
-        InRowCount(x, y, -1, 0) >= WIN_CONDITION || 
-        InRowCount(x, y, -1, 1) >= WIN_CONDITION || 
-        InRowCount(x, y, 0,  -1) >= WIN_CONDITION || 
-        InRowCount(x, y, 0,  1) >= WIN_CONDITION || 
-        InRowCount(x, y, 1,  -1) >= WIN_CONDITION || 
-        InRowCount(x, y, 1,  0) >= WIN_CONDITION || 
-        InRowCount(x, y, 1,  1) >= WIN_CONDITION)
+        InRowCount(x, y, -1, 0) >= WIN_CONDITION ||
+        InRowCount(x, y, -1, 1) >= WIN_CONDITION ||
+        InRowCount(x, y, 0, -1) >= WIN_CONDITION ||
+        InRowCount(x, y, 0, 1) >= WIN_CONDITION ||
+        InRowCount(x, y, 1, -1) >= WIN_CONDITION ||
+        InRowCount(x, y, 1, 0) >= WIN_CONDITION ||
+        InRowCount(x, y, 1, 1) >= WIN_CONDITION)
     {
         if (m_GameState.GetAt(y, x) == PlayerToBeAsserted)
         {
@@ -193,8 +193,7 @@ void MCTS::RollOut(Node* start)
             SpacesAvailable.erase(SpacesAvailable.begin() + Random);
 
             PlayerToMove = PlayerToMove == 1 ? 2 : 1;
-        }
-        while (!Result.has_value());
+        } while (!Result.has_value());
         WinsCount = Result == 100 ? WinsCount + 1 : Result == -100 ? WinsCount - 1 : WinsCount;
     }
     BackPropagate(start, WinsCount);
@@ -202,11 +201,11 @@ void MCTS::RollOut(Node* start)
 
 void MCTS::BackPropagate(Node* start, int wins)
 {
-    while(true)
+    while (true)
     {
         start->WinsCount += wins;
         start->Visits++;
-        start->WinPropability = 0.5 + 0.5 * (start->WinsCount / start->Visits * RolloutIterations)/100;
+        start->WinPropability = 0.5 + 0.5 * (start->WinsCount / start->Visits * RolloutIterations) / 100;
         if (start->Parent == nullptr)
         {
             return;
@@ -215,7 +214,7 @@ void MCTS::BackPropagate(Node* start, int wins)
         {
             start = start->Parent;
         }
-    } 
+    }
 
 }
 
@@ -288,9 +287,9 @@ std::vector<MCTS::MoveInfo> MCTS::GetValidMoves(Node* target)
         {
             for (int j = 0; j < m_GameState.GetDimensions(); j++)
             {
-                if (m_GameState.GetAt(i,j) == 0)
+                if (m_GameState.GetAt(i, j) == 0)
                 {
-                    Result.emplace_back(i * MAP_SIZE + j,target->Move.player == 1 ? 2 : 1 );
+                    Result.emplace_back(i * MAP_SIZE + j, target->Move.player == 1 ? 2 : 1);
                 }
             }
         }
@@ -312,7 +311,7 @@ uint32_t MCTS::InRowCount(int posX, int posY, int dx, int dy) const
     while (m_GameState.GetAt(posY, posX) == Player)
     {
         HitCount++;
-        if (HitCount >= WIN_CONDITION) 
+        if (HitCount >= WIN_CONDITION)
         {
             break;
         }
@@ -325,4 +324,3 @@ uint32_t MCTS::InRowCount(int posX, int posY, int dx, int dy) const
     }
     return HitCount;
 }
-

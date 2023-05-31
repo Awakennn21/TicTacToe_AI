@@ -140,7 +140,7 @@ int MinMax::MinMaxTurn(char player, char** board)
 {
     //int winner;
     std::pair<int, int> move = GetBestMove(0, false, player, board);
-    
+
 
     int linear = move.first * size + move.second;
     return move.first * size + move.second;
@@ -159,7 +159,7 @@ int MinMax::MinMaxFunction(int maxDepth, char** board, int depth, bool isMax, ch
     {
         if (!isMax)
         {
-            return score * 10  - depth;
+            return score * 10 - depth;
         }
         else
         {
@@ -312,5 +312,4 @@ std::pair<int, int> MinMax::GetBestMove(int depth, bool isMax, char player, char
 
     return bestMove;
 }
-
 

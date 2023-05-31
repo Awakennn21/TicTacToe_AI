@@ -1,11 +1,8 @@
 #pragma once
-#include "../Map.h"
-#include <random>
+#include "../Utilities/Map.h"
+#include <optional>
 #include <vector>
 #include <list>
-#include <iostream>
-#include <cmath>
-#include <optional>
 
 
 class MCTS

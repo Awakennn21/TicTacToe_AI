@@ -1,4 +1,5 @@
 #pragma once
+#include<vector>
 #include "MCTS.h"
 
 class MCTS_Controller
