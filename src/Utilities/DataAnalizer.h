@@ -24,7 +24,7 @@ public:
 	void LoadData(PreciseMoveData data) { m_MovesToAnalize.push_back(data); }
 	void ClearData() { m_MovesToAnalize.clear(); }
 
-	void FilterData(std::function<bool(PreciseMoveData)> condition)
+	void FilterData(std::function<bool(const PreciseMoveData&)> condition = [](PreciseMoveData) { return true; })
 	{
 		std::vector<PreciseMoveData> New;
 		for (int i = 0; i < m_MovesToAnalize.size(); i++)
@@ -38,18 +38,53 @@ public:
 		m_MovesToAnalize = New;
 	}
 
-	double CalculateTimeMean(std::function<bool(PreciseMoveData)> conditionToMeet = [](PreciseMoveData) { return true; })
+	template<typename T>
+	double Mean(std::function<T(const PreciseMoveData&)> fieldSelector, std::function<bool(const PreciseMoveData&)> conditionToMeet = [](const PreciseMoveData&) { return true; })
 	{
 		std::vector<PreciseMoveData> Tmp = m_MovesToAnalize;
 		FilterData(conditionToMeet);
 		double Mean = 0.0;
-		for (auto i : m_MovesToAnalize)
+		for (const auto& i : m_MovesToAnalize)
 		{
-			Mean += i.TimeSpendOnThisMove;
+			Mean += static_cast<double>(fieldSelector(i));
 		}
 		Mean /= m_MovesToAnalize.size();
 		m_MovesToAnalize = Tmp;
 		return Mean;
+	}
+
+	template<typename T>
+	PreciseMoveData& Max(std::function<T(const PreciseMoveData&)> fieldSelector, std::function<bool(const PreciseMoveData&)> conditionToMeet = [](const PreciseMoveData&) { return true; })
+	{
+		std::vector<PreciseMoveData> Tmp = m_MovesToAnalize;
+		FilterData(conditionToMeet);
+		PreciseMoveData Max = m_MovesToAnalize.front();
+		for (const auto& i : m_MovesToAnalize)
+		{
+			if (fieldSelector(i) > fieldSelector(Max))
+			{
+				Max = i;
+			}
+		}
+		m_MovesToAnalize = Tmp;
+		return Max;
+	}
+
+	template<typename T>
+	PreciseMoveData& Min(std::function<T(const PreciseMoveData&)> fieldSelector, std::function<bool(const PreciseMoveData&)> conditionToMeet = [](const PreciseMoveData&) { return true; })
+	{
+		std::vector<PreciseMoveData> Tmp = m_MovesToAnalize;
+		FilterData(conditionToMeet);
+		PreciseMoveData Min = m_MovesToAnalize.front();
+		for (const auto& i : m_MovesToAnalize)
+		{
+			if (fieldSelector(i) < fieldSelector(Min))
+			{
+				Min = i;
+			}
+		}
+		m_MovesToAnalize = Tmp;
+		return Min;
 	}
 
 private:

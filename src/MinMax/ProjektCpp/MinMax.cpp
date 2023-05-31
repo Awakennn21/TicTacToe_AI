@@ -297,7 +297,7 @@ std::pair<int, int> MinMax::GetBestMove(int depth, bool isMax, char player, char
             {
                 board[i][j] = player;
 
-                int score = MinMaxFunction(2, board, depth, isMax, player, -9999, 9999);
+                int score = MinMaxFunction(3, board, depth, isMax, player, -9999, 9999);
 
                 board[i][j] = free;
 
