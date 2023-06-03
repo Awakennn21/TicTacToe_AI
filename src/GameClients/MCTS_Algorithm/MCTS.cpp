@@ -1,4 +1,6 @@
 #include "MCTS.h"
+#include <algorithm>
+
 int MCTS::RunMCTS(Node* state, size_t iterations, int playerToBeAsserted)
 {
     srand(time(NULL));
@@ -6,10 +8,8 @@ int MCTS::RunMCTS(Node* state, size_t iterations, int playerToBeAsserted)
 
     if (state == nullptr)
     {
-        return rand() % (MAP_SIZE * MAP_SIZE);
+        return MAP_SIZE / 2 * MAP_SIZE + MAP_SIZE / 2;
     }
-
-
     PlayerToBeAsserted = playerToBeAsserted;
     for (int i = 0; i < iterations; i++)
     {
@@ -19,6 +19,7 @@ int MCTS::RunMCTS(Node* state, size_t iterations, int playerToBeAsserted)
 
 
     int Result = ReturnBestMove(state);
+    Clear();
     return Result;
 }
 
@@ -67,7 +68,7 @@ void MCTS::SelectNode(Node* start)
     }
     else
     {
-        BackPropagate(start, Evaluate().value() / 100);
+        BackPropagate(start, Evaluate().value());
     }
 }
 
@@ -81,7 +82,7 @@ void MCTS::AnalizeMoves(Node* root)
         {
             if (StateResult.value() < 0.0)
             {
-                current_node->Parent->WinPropability = StateResult.value() / 100;
+                current_node->Parent->WinPropability = StateResult.value() ;
                 current_node->WinPropability = StateResult.value();
             }
         }
@@ -143,16 +144,16 @@ std::optional<double> MCTS::HasGameEnded(int y, int x)
     {
         if (m_GameState.GetAt(y, x) == PlayerToBeAsserted)
         {
-            return 100;
+            return 1.0;
         }
         else
         {
-            return -100;
+            return -1.0;
         }
     }
     if (EmptySpacesOnMap() == 0)
     {
-        return 0;
+        return 0.0;
     }
     else
     {
@@ -177,25 +178,22 @@ void MCTS::Expansion(Node* node)
 void MCTS::RollOut(Node* start)
 {
     int WinsCount = 0;
-    for (int i = 0; i < RolloutIterations; i++)
+    RecreatePos(start);
+    int PlayerToMove = start->Move.player == 1 ? 2 : 1;
+    std::vector<MoveInfo> SpacesAvailable = GetValidMoves(start);
+    std::optional<double> Result;
+    do
     {
-        RecreatePos(start);
-        int PlayerToMove = start->Move.player == 1 ? 2 : 1;
-        std::vector<MoveInfo> SpacesAvailable = GetValidMoves(start);
-        std::optional<double> Result;
-        do
-        {
-            int Random = rand() % SpacesAvailable.size();
+        int Random = rand() % SpacesAvailable.size();
 
-            m_GameState.At(SpacesAvailable[Random].pos / MAP_SIZE, SpacesAvailable[Random].pos % MAP_SIZE, PlayerToMove);
-            Result = HasGameEnded(SpacesAvailable[Random].pos / MAP_SIZE, SpacesAvailable[Random].pos % MAP_SIZE);
+        m_GameState.At(SpacesAvailable[Random].pos / MAP_SIZE, SpacesAvailable[Random].pos % MAP_SIZE, PlayerToMove);
+        Result = HasGameEnded(SpacesAvailable[Random].pos / MAP_SIZE, SpacesAvailable[Random].pos % MAP_SIZE);
 
-            SpacesAvailable.erase(SpacesAvailable.begin() + Random);
+        SpacesAvailable.erase(SpacesAvailable.begin() + Random);
 
-            PlayerToMove = PlayerToMove == 1 ? 2 : 1;
-        } while (!Result.has_value());
-        WinsCount = Result == 100 ? WinsCount + 1 : Result == -100 ? WinsCount - 1 : WinsCount;
-    }
+        PlayerToMove = PlayerToMove == 1 ? 2 : 1;
+    } while (!Result.has_value());
+    WinsCount += Result.value();
     BackPropagate(start, WinsCount);
 }
 
@@ -205,7 +203,7 @@ void MCTS::BackPropagate(Node* start, int wins)
     {
         start->WinsCount += wins;
         start->Visits++;
-        start->WinPropability = 0.5 + 0.5 * (start->WinsCount / start->Visits * RolloutIterations) / 100;
+        start->WinPropability = std::clamp(start->WinsCount / start->Visits, -1.0, 1.0);
         if (start->Parent == nullptr)
         {
             return;
@@ -233,11 +231,11 @@ std::optional<double> MCTS::Evaluate() const
                 {
                     if (m_GameState.GetAt(y, x) == PlayerToBeAsserted)
                     {
-                        return 100;
+                        return 1;
                     }
                     else
                     {
-                        return -100;
+                        return -1;
                     }
                 }
             }

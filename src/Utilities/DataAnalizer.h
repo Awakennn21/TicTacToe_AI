@@ -12,7 +12,6 @@ public:
 		uint32_t WinCondition;
 		uint32_t Player;
 		uint32_t MovesID;
-		int Algorithm;
 		double TimeSpendOnThisMove;
 	};
 public:

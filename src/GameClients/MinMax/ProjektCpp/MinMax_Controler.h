@@ -1,7 +1,9 @@
 #pragma once
 #include "MinMax.h"
+#include "../GameClients/GameClient.h"
+#include <vector>
 
-class  MinMax_Controler
+class  MinMax_Controler : public GameClient
 {
 public:
 	struct Point
@@ -28,11 +30,32 @@ public:
 		return ReturnValue;
 	}
 
-	Point NextMove(int** board)
+	std::tuple<uint32_t, uint32_t,double> NextMove(class Map map, int PlayerToMove)
 	{
+		uint32_t dimensions = map.GetDimensions();
+		int** board = new int* [dimensions];
+		for (int i = 0; i < dimensions; i++)
+		{
+			board[i] = new int[dimensions];
+		}
+		for (int i = 0; i < dimensions; i++)
+		{
+			for (int j = 0; j < dimensions; j++)
+			{
+				board[i][j] = map.GetAt(i, j);
+			}
+		}
+		Timer Chrono;
+		double TimeElapsed = 0.0;
+		Chrono.Start();
 		int suggestedMove = m_MinMax.MinMaxTurn(m_Player, convertBoard(board, m_MapSize, m_MapSize));
-		Point ReturnValue = { suggestedMove / m_MapSize,suggestedMove % m_MapSize };
-		return ReturnValue;
+		TimeElapsed = Chrono.Stop();
+		for (int i = 0; i < dimensions; i++)
+		{
+			delete [] board[i];
+		}
+		delete[] board;
+		return { suggestedMove / m_MapSize,suggestedMove % m_MapSize,TimeElapsed };
 	}
 	
 	int EvaluateGame(char** board)
